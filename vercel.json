@@ -7,25 +7,10 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/search",
-      "dest": "api/search.ts"
-    },
-    {
-      "src": "/api/law",
-      "dest": "api/law.ts"
-    },
-    {
-      "src": "/api/local-law",
-      "dest": "api/local-law.ts"
-    },
-    {
-      "src": "/api/local-list",
-      "dest": "api/local-list.ts"
-    },
-    {
-      "src": "/api/contents",
-      "dest": "api/contents.ts"
-    }
+    { "src": "/api/search",      "dest": "api/search.ts" },
+    { "src": "/api/law",         "dest": "api/law.ts"     },
+    { "src": "/api/contents",    "dest": "api/contents.ts"},
+    { "src": "/api/local-list",  "dest": "api/local-list.ts" },
+    { "src": "/api/local-law",   "dest": "api/local-law.ts"  }
   ]
 }
