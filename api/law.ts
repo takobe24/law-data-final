@@ -1,43 +1,30 @@
-// api/law.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
 
 const OC = 'con3363'; // 법제처 API 키
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { lawId } = req.query;
-
-  // lawId 체크만 남기고 OC 체크는 제거
+  const lawId = req.query.lawId;
   if (!lawId || typeof lawId !== 'string') {
-    res
-      .status(400)
-      .setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.end(JSON.stringify({ error: 'lawId 파라미터가 필요합니다.' }));
+    res.status(400).json({ error: 'OC와 lawId는 필수입니다.' });
     return;
   }
 
   try {
     const response = await axios.get('https://www.law.go.kr/DRF/lawService.do', {
       params: {
-        OC,         // 여기서 하드코딩한 키 사용
-        target: 'lawInfo',
+        OC,
+        target: 'lawDetail',
         type: 'XML',
-        lawId,
+        lawId
       },
-      responseType: 'text',
+      responseType: 'text'
     });
-
-    res
-      .status(200)
-      .setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.send(response.data);
-  } catch (err) {
-    // TS 빌드 에러 안 나게 any 처리
-    const error = err as any;
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.status(200).send(response.data);
+  } catch (error: any) {
+    // ↓ 반드시 any나 unknown→any로 캐스트
     console.error(error);
-    res
-      .status(500)
-      .setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.end(JSON.stringify({ error: 'lawInfo API 호출 실패' }));
+    res.status(500).json({ error: 'lawDetail API 호출 실패', message: error.message });
   }
 }
