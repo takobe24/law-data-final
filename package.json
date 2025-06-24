@@ -20,6 +20,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^18.19.112",
     "@types/xml2js": "^0.4.14",
+    "@vercel/node": "^5.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
