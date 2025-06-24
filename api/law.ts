@@ -1,35 +1,48 @@
-// api/law.ts
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
-import { parseStringPromise } from 'xml2js';
+import iconv from 'iconv-lite';
 
-const BASE_URL = 'https://www.law.go.kr/DRF/lawService.do';
+const OC = 'con3363'; // 법제처 API 키
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { OC, lawId } = req.query;
-
-  if (!OC || !lawId) {
-    return res.status(400).json({ error: 'OC와 lawId는 필수입니다.' });
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  const { lawId } = req.query;
+  if (!lawId || typeof lawId !== 'string') {
+    res
+      .status(400)
+      .setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.end('<error>lawId 파라미터가 필요합니다.</error>');
+    return;
   }
 
   try {
-    const url = `${BASE_URL}?OC=${OC}&target=lawView&lawId=${lawId}&type=XML`;
-    const response = await axios.get(url, { responseType: 'text' });
-    const xml = response.data;
+    const response = await axios.get(
+      'https://www.law.go.kr/DRF/lawService.do',
+      {
+        params: {
+          OC,
+          target: 'getLawInfo',  // 법조문 상세 조회
+          type: 'XML',
+          lawId,
+        },
+        responseType: 'arraybuffer', // 반드시 arraybuffer 로
+      }
+    );
 
-    const accept = req.headers.accept || '';
-    const wantsJson = accept.includes('application/json');
+    // EUC-KR → UTF-8 디코딩
+    const xml = iconv.decode(Buffer.from(response.data), 'euc-kr');
 
-    if (wantsJson) {
-      const json = await parseStringPromise(xml, { explicitArray: false });
-      return res.status(200).json(json);
-    } else {
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      return res.status(200).send(xml);
-    }
-
-  } catch (error) {
-    return res.status(500).json({ error: '법령 상세 조회 실패', detail: error.message });
+    res
+      .status(200)
+      .setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.send(xml);
+  } catch (error: any) {
+    const msg = error instanceof Error ? error.message : String(error);
+    res
+      .status(500)
+      .setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.end(`<error>getLawInfo API 호출 실패: ${msg}</error>`);
   }
 }
