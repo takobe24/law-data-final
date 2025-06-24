@@ -7,8 +7,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { query } = req.query;
 
   if (!query || typeof query !== 'string') {
-    res.status(400).setHeader('Content-Type', 'application/xml');
-    res.end(`<error>query 파라미터가 필요합니다.</error>`);
+    res.status(400).setHeader('Content-Type', 'text/plain');
+    res.end('❌ query 파라미터가 필요합니다.');
     return;
   }
 
@@ -23,10 +23,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       responseType: 'text',
     });
 
+    // HTML 에러 응답인지 감지
+    if (response.data.includes('<html') || response.data.includes('<HTML')) {
+      res.status(502).setHeader('Content-Type', 'text/plain');
+      res.end('❌ 법제처 API에서 HTML 오류 페이지가 반환되었습니다.');
+      return;
+    }
+
     res.setHeader('Content-Type', 'application/xml');
     res.status(200).send(response.data);
   } catch (error) {
-    res.status(500).setHeader('Content-Type', 'application/xml');
-    res.end(`<error>lawSearch API 호출 실패</error>`);
+    res.status(500).setHeader('Content-Type', 'text/plain');
+    res.end('❌ lawSearch API 호출 실패');
   }
 }
