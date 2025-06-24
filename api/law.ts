@@ -1,32 +1,35 @@
+// api/law.ts
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
+import { parseStringPromise } from 'xml2js';
+
+const BASE_URL = 'https://www.law.go.kr/DRF/lawService.do';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { lawId } = req.query;
+  const { OC, lawId } = req.query;
 
-  if (!lawId || typeof lawId !== 'string') {
-    return res.status(400).json({ error: '법령 ID(lawId)가 유효하지 않습니다.' });
+  if (!OC || !lawId) {
+    return res.status(400).json({ error: 'OC와 lawId는 필수입니다.' });
   }
 
   try {
-    const response = await axios.get(
-      `https://www.law.go.kr/DRF/lawService.do`,
-      {
-        params: {
-          OC: '발급받은 API ID',
-          target: 'law',
-          type: 'XML',
-          lawId: lawId
-        }
-      }
-    );
+    const url = `${BASE_URL}?OC=${OC}&target=lawView&lawId=${lawId}&type=XML`;
+    const response = await axios.get(url, { responseType: 'text' });
+    const xml = response.data;
 
-    res.setHeader('Content-Type', 'text/xml'); // XML 응답 그대로 내보냄
-    res.status(200).send(response.data);
-  } catch (error: any) {
-    res.status(500).json({
-      message: '법제처 API 요청 중 오류 발생',
-      detail: error.message
-    });
+    const accept = req.headers.accept || '';
+    const wantsJson = accept.includes('application/json');
+
+    if (wantsJson) {
+      const json = await parseStringPromise(xml, { explicitArray: false });
+      return res.status(200).json(json);
+    } else {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      return res.status(200).send(xml);
+    }
+
+  } catch (error) {
+    return res.status(500).json({ error: '법령 상세 조회 실패', detail: error.message });
   }
 }
